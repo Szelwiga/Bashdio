@@ -3,6 +3,7 @@
 		<title> Bashdio </title>
 		<link href="resources/main.css" rel="stylesheet" type="text/css" />
 		<link rel="icon" href="resources/icon.png" type="image/x-icon" />
+		<script src="resources/settings.js"></script>
 	</head>
 	<body onresize="fixCom()">
 		<input type="file" id="loadReq" multiple hidden onchange=loadFolder()>
@@ -55,17 +56,22 @@
 			var AUDIO=document.getElementById("player");
 			var R=document.getElementById("rotator");
 			var NAV=document.getElementById("side");
-			var F=false, ft=true, DATA=512;
 			var percentDivide=100, fonWidth=1000;
-			var firstPush=true, MX=true;
+			var F=false, ft=true, DATA=512;
 			var commands=[], cList=[];
+			var MX=true, prefix="";
 			var stopped=true;
-			var prefix="";
-			pushCommand("Welcome to Bashdio!")
+
+
+			document.getElementById("sidenavBtn").innerHTML=visualizerButton;
 			INP.addEventListener("keydown", f);
+			pushCommand("Welcome to Bashdio!");
+			AUDIO.volume=defaultVolume/100.0;
+
 			setInterval(rotatorUpdate, 1000), rotatorUpdate();
 			setInterval(timeUpdater, 1000), timeUpdater();
 			setInterval(navUpdate, 5000), navUpdate();
+
 			function loadMainFolder(){
 				mainFolder=document.getElementById("folder").files;
 				if (mainFolder.length!=0)
@@ -177,28 +183,42 @@
 					}
 			}
 			function timeUpdater(){
-				if (!(AUDIO.ended) && !(stopped)) updateStatus(true);
-				if (AUDIO.ended || stopped)
-					if (arr.length!=0)
-						loadSong();
-					else
-            {
-						nowPlaying="Queue is empty."
-						updateStatus(false);
-					  }
+				if (useStopAsPause)
+					{
+					updateStatus(true);
+					if (AUDIO.ended)
+						if (arr.length!=0)
+							loadSong();
+						else
+							nowPlaying="Queue is empty.", updateStatus(false);
+					}
+				else
+					{
+					if (!(AUDIO.ended) && !(stopped)) updateStatus(true);
+					if (AUDIO.ended || stopped)
+						if (arr.length!=0 && !stopped)
+							loadSong();
+						else
+							{
+							nowPlaying="Queue is empty.";
+							updateStatus(false);
+							}
+					}
 			}
-			function updateStatus(show_percent){
+			function updateStatus(showPercent){
+				if (alwaysShowPercent)
+					showPercent=true;
 				var X=AUDIO.currentTime, Y=AUDIO.duration;
 				if (Number.isNaN(Y))
 					Y=1.0;
 				var S="<", percent=(X/Y)*100;
-				for (var i=1; i<=percentDivide/2-2*show_percent; i++)
+				for (var i=1; i<=percentDivide/2-2*showPercent; i++)
 					if (i*(100/percentDivide)<=percent)
 						S+='#';
 					else
 						S+='.';
-				if(show_percent) S+="("+Math.floor(percent)+"%)";
-				for (var i=percentDivide/2+1+2*show_percent; i<=percentDivide; i++)
+				if (showPercent) S+="("+Math.floor(percent)+"%)";
+				for (var i=percentDivide/2+1+2*showPercent; i<=percentDivide; i++)
 					if (i*(100/percentDivide)<=percent)
 						S+='#';
 					else
@@ -274,30 +294,10 @@
 				return arr[A.length-1][B.length-1];
 			}
 			function suckOutName(s){
-				if (typeof s!='string')
-				s = s.name.substring(0, s.name.length);
-				var x=-1;
-				for (var i=0; i<s.length; i++)
-					{
-					if (x==0 && s.charAt(i)=='/')
-						x=i;
-					if (x==-1 && s.charAt(i)=='/')
-						x=0;
-					}
-				//first dot from the right has to separate the name from the extension, so the extension is cut from this dot including
-				var y=0;
-				for(var i=s.length-1; i>=0; i--)
-					{
-					y+=1;
-					if (s.charAt(i)=='.') i=0;
-					}
-				s = s.substring(x+1, s.length-y);
-				if (s.length > 64)
-				{
-					s=s.substring(0, 64-3);
-					s+="...";
-				}
-				return s;
+				s=s.name, s=s.substring(0, s.lastIndexOf('.'));
+				if (s.length>fileNameLengthLimit)
+					name=s.substring(0, fileNameLengthLimit)+"...";
+				return s.substring(0, s.length-fileNameCutSuffix);
 			}
 			function loadSong(){
 				if (arr.length==0)
@@ -305,13 +305,8 @@
 					pushCommand('<p style="color:#ff4d4d; display:inline;">Error:</p> Queue is empty!');
 					return;
 					}
-				pushCommand("Now playing: "+suckOutName(arr[0])), nowPlaying=suckOutName(arr[0]);
-				stopped=false;
-				if (typeof arr[0]=='string')
-					AUDIO.src=arr[0], AUDIO.play();
-				else
-					AUDIO.src=URL.createObjectURL(arr[0]), AUDIO.play();
-				arr.shift();
+				pushCommand("Now playing: "+suckOutName(arr[0])), nowPlaying=suckOutName(arr[0]), stopped=false;
+				AUDIO.src=URL.createObjectURL(arr[0]), AUDIO.play(), arr.shift();
 				if (arr.length==0)
 					pushCommand('<p style="color:#ff4d4d; display:inline;">Error:</p> Queue is empty!');
 			}
@@ -326,24 +321,18 @@
 					pushCommand("cd: (folder name): go to specified folder.");
 					pushCommand('push (optional argument "all"): clips from current folder will be pushed to the queue, with all arugment every clip from main folder will be loaded.');
 					pushCommand("ls: view folders inside current folder and amount of clips in it.");
-					pushCommand("showHideUpload: show/hide upload arrow on navigation bar.");
 					pushCommand("load: enables to load any clip directly to queue.");
-					pushCommand("findInQueue (song name): find by name from queue and start playing song.");
 					pushCommand("find (song name): find by name from main folder and start playing song");
 					pushCommand("Controls:");
-					pushCommand("cut (number): number of characters cutted from suffix song name.");
 					pushCommand("volume (number): set volume level (from 0 to 100).");
 					pushCommand("clear: clear previous commands.");
-					pushCommand("mute: mute or unmute the audio");
-					pushCommand("f, ff, fff, ffff: move audio forward for: 5s, 15s, 60s, 180s");
+					pushCommand("mute: mute or unmute the audio.");
+					pushCommand("f, ff, fff, ffff: move audio forward for values specified in settings.js.");
 					pushCommand("skip: skip current song and start playing next one.");
-          pushCommand("pause: pause current song");
-					pushCommand("stop: stop playing songs");
-					pushCommand("play: unpause current song.");
-					pushCommand("start: start playing songs (needs to be typed to play audio).");
+					pushCommand("pause | play: pause/play current song");
+					pushCommand("start: start playing songs.");
 					pushCommand("shuffle: mix up queue, by default clips are sorted by name.");
 					pushCommand("queue: view 5 next songs in queue.");
-					pushCommand("exit: close Bashdio (may not work).");
 					pushCommand("sweep: clears the queue.");
 					return;
 					}
@@ -533,26 +522,26 @@
 					}
 				if (com=="f")
 					{
-					pushCommand("Skipped 5 seconds.");
-					AUDIO.currentTime+=5;
+					pushCommand("Skipped "+skipF+" seconds.");
+					AUDIO.currentTime+=skipF;
 					return;
 					}
 				if (com=="ff")
 					{
-					pushCommand("Skipped 15 seconds.");
-					AUDIO.currentTime+=15;
+					pushCommand("Skipped "+skipFF+" seconds.");
+					AUDIO.currentTime+=skipFF;
 					return;
 					}
 				if (com=="fff")
 					{
-					pushCommand("Skipped 60 seconds.");
-					AUDIO.currentTime+=60;
+					pushCommand("Skipped "+skipFFF+" seconds.");
+					AUDIO.currentTime+=skipFFF;
 					return;
 					}
 				if (com=="ffff")
 					{
-					pushCommand("Skipped 180 seconds.");
-					AUDIO.currentTime+=180;
+					pushCommand("Skipped "+skipFFFF+" seconds.");
+					AUDIO.currentTime+=skipFFFF;
 					return;
 					}
 				if (com=="skip")
@@ -574,7 +563,7 @@
 					navUpdate();
 					return;
 					}
-				if (com=="pause")
+				if (com=="pause" || (com=="stop" && useStopAsPause))
 					{
 					if (AUDIO.paused)
 						pushCommand("Audio is already paused!");
@@ -583,16 +572,12 @@
 					navUpdate();
 					return;
 					}
-				if (com=="stop")
+				if (com=="stop" && !useStopAsPause)
 					{
-					stopped=true;
-					arr=[];
+					stopped=true, arr=[];
 					if (!(AUDIO.paused)) AUDIO.pause();
 					if (!(Number.isNaN(AUDIO.duration))) AUDIO.currentTime=AUDIO.duration;
-					AUDIO.src=null;
-					pushCommand("Stopped audio.");
-					nowPlaying="";
-					navUpdate();
+					pushCommand("Stopped audio."), nowPlaying="-", navUpdate();
 					return;
 					}
 				if (com=="shuffle")
