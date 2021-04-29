@@ -1,0 +1,10 @@
+var fileNameLengthLimit=100;
+var alwaysShowPercent=true;
+var fileNameCutSuffix=12;
+var visualizerButton='֍';
+var useStopAsPause=true;
+var defaultVolume=20;//(0-100)
+var skipFFFF=180;
+var skipFFF=60;
+var skipFF=15;
+var skipF=5;

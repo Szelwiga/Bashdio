@@ -1,0 +1,20 @@
+cd
+sweep
+showHideUpload
+load
+exit
+queue
+push
+ls
+findInQueue
+find
+volume
+clear
+mute
+f, ff, fff, ffff
+skip
+start
+play
+pause
+stop
+shuffle
