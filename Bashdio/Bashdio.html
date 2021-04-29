@@ -55,10 +55,11 @@
 			var AUDIO=document.getElementById("player");
 			var R=document.getElementById("rotator");
 			var NAV=document.getElementById("side");
-			var F=false, cut=17, ft=true, DATA=512;
+			var F=false, ft=true, DATA=512;
 			var percentDivide=100, fonWidth=1000;
 			var firstPush=true, MX=true;
 			var commands=[], cList=[];
+			var stopped=true;
 			var prefix="";
 			pushCommand("Welcome to Bashdio!")
 			INP.addEventListener("keydown", f);
@@ -176,25 +177,28 @@
 					}
 			}
 			function timeUpdater(){
-				updateStatus();
-				if (AUDIO.ended)
+				if (!(AUDIO.ended) && !(stopped)) updateStatus(true);
+				if (AUDIO.ended || stopped)
 					if (arr.length!=0)
 						loadSong();
 					else
-						nowPlaying="Queue is empty.";
+            {
+						nowPlaying="Queue is empty."
+						updateStatus(false);
+					  }
 			}
-			function updateStatus(){
+			function updateStatus(show_percent){
 				var X=AUDIO.currentTime, Y=AUDIO.duration;
 				if (Number.isNaN(Y))
 					Y=1.0;
 				var S="<", percent=(X/Y)*100;
-				for (var i=1; i<=percentDivide/2; i++)
+				for (var i=1; i<=percentDivide/2-2*show_percent; i++)
 					if (i*(100/percentDivide)<=percent)
 						S+='#';
 					else
 						S+='.';
-				S+="("+Math.floor(percent)+"%)"
-				for (var i=percentDivide/2+1; i<=percentDivide; i++)
+				if(show_percent) S+="("+Math.floor(percent)+"%)";
+				for (var i=percentDivide/2+1+2*show_percent; i<=percentDivide; i++)
 					if (i*(100/percentDivide)<=percent)
 						S+='#';
 					else
@@ -271,7 +275,7 @@
 			}
 			function suckOutName(s){
 				if (typeof s!='string')
-					return s.name.substring(0, s.name.length-cut);
+				s = s.name.substring(0, s.name.length);
 				var x=-1;
 				for (var i=0; i<s.length; i++)
 					{
@@ -280,7 +284,20 @@
 					if (x==-1 && s.charAt(i)=='/')
 						x=0;
 					}
-				return s.substring(x+1, s.length-cut);
+				//first dot from the right has to separate the name from the extension, so the extension is cut from this dot including
+				var y=0;
+				for(var i=s.length-1; i>=0; i--)
+					{
+					y+=1;
+					if (s.charAt(i)=='.') i=0;
+					}
+				s = s.substring(x+1, s.length-y);
+				if (s.length > 64)
+				{
+					s=s.substring(0, 64-3);
+					s+="...";
+				}
+				return s;
 			}
 			function loadSong(){
 				if (arr.length==0)
@@ -289,6 +306,7 @@
 					return;
 					}
 				pushCommand("Now playing: "+suckOutName(arr[0])), nowPlaying=suckOutName(arr[0]);
+				stopped=false;
 				if (typeof arr[0]=='string')
 					AUDIO.src=arr[0], AUDIO.play();
 				else
@@ -319,7 +337,8 @@
 					pushCommand("mute: mute or unmute the audio");
 					pushCommand("f, ff, fff, ffff: move audio forward for: 5s, 15s, 60s, 180s");
 					pushCommand("skip: skip current song and start playing next one.");
-					pushCommand("pause, stop: pause current song");
+          pushCommand("pause: pause current song");
+					pushCommand("stop: stop playing songs");
 					pushCommand("play: unpause current song.");
 					pushCommand("start: start playing songs (needs to be typed to play audio).");
 					pushCommand("shuffle: mix up queue, by default clips are sorted by name.");
@@ -382,12 +401,6 @@
 					pushCommand("Queue length: "+arr.length);
 					for (var i=0; i<Math.min(5, arr.length); i++)
 						pushCommand("["+i+"]: "+suckOutName(arr[i]));
-					return;
-					}
-				if (com.substring(0, 3)=="cut")
-					{
-					var cnt=(com.substring(4, com.length)*10)/10;
-					pushCommand("Cut is now set to: "+cnt), cut=cnt;
 					return;
 					}
 				if (com.substring(0, 4)=="push")
@@ -561,12 +574,24 @@
 					navUpdate();
 					return;
 					}
-				if (com=="pause" || com=="stop")
+				if (com=="pause")
 					{
 					if (AUDIO.paused)
 						pushCommand("Audio is already paused!");
 					else
 						AUDIO.pause(), pushCommand("Paused audio.");
+					navUpdate();
+					return;
+					}
+				if (com=="stop")
+					{
+					stopped=true;
+					arr=[];
+					if (!(AUDIO.paused)) AUDIO.pause();
+					if (!(Number.isNaN(AUDIO.duration))) AUDIO.currentTime=AUDIO.duration;
+					AUDIO.src=null;
+					pushCommand("Stopped audio.");
+					nowPlaying="";
 					navUpdate();
 					return;
 					}
