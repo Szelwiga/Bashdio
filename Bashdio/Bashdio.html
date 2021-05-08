@@ -43,7 +43,6 @@
 					- https://github.com/luisbraganca/fake-terminal-website
 					- https://stackoverflow.com/questions/62725857/how-to-get-volume-level-using-javascript <- in previous version
 				TODO:
-					- find and push
 					- windows/google audio navigation
 					- clean up code
 					- none ? :)
@@ -343,12 +342,12 @@
 					pushCommand('push (optional argument "all"): clips from current folder will be pushed to the queue, with all arugment every clip from main folder will be loaded.');
 					pushCommand("ls: view folders inside current folder and amount of clips in it.");
 					pushCommand("load: enables to load any clip directly to queue.");
-					pushCommand("find (song name): find by name from main folder and start playing song");
+					pushCommand("find (song name): find song by name from main folder and push it to the front of queue.");
 					pushCommand("Controls:");
 					pushCommand("volume (number): set volume level (from 0 to 100).");
 					pushCommand("clear: clear previous commands.");
 					pushCommand("mute: mute or unmute the audio.");
-					pushCommand("f, ff, fff, ffff: move audio forward for values specified in settings.js.");
+					pushCommand("f, ff, fff, ffff, g, gg, ggg, gggg: move audio forward or backward for values specified in settings.js.");
 					pushCommand("skip: skip current song and start playing next one.");
 					pushCommand("pause | play: pause/play current song");
 					pushCommand("start: start playing songs.");
@@ -420,7 +419,11 @@
 						pushCommand("Main folder was not loaded.");
 						return;
 						}
-					var res=0;
+					var res=0, temporaryPrefix;
+					if (com.length!=4)
+						temporaryPrefix=prefix+com.substring(5, com.length)+'/';
+					else
+						temporaryPrefix=prefix;
 					if (com.substring(5, com.length)=="all")
 						{
 						for (var i=0; i<mainFolder.length; i++)
@@ -434,11 +437,11 @@
 						if (isValid(mainFolder[i]))
 							{
 							var xx=mainFolder[i].webkitRelativePath;
-							if (prefix==xx.substring(0, prefix.length) && xx.lastIndexOf('/')==prefix.length-1)
+							if (temporaryPrefix==xx.substring(0, temporaryPrefix.length) && xx.lastIndexOf('/')==temporaryPrefix.length-1)
 								arr.push(mainFolder[i]), res++;
 							}
 						}
-					pushCommand('Pushed '+res+' clips to queue from: <p style="color:#3399ff; display:inline;">'+prefix+'</p>');
+					pushCommand('Pushed '+res+' clips to queue from: <p style="color:#3399ff; display:inline;">'+temporaryPrefix+'</p>');
 					return;
 					}
 				if (com=="ls")
@@ -473,7 +476,7 @@
 					pushCommand("Files: "+FIL);
 					return;
 					}
-				if (com.substring(0, 5)=="find ")
+				if (com.substring(0, 5)=="list ")
 					{
 					var name=com.substring(5, com.length), A=0, B=0;
 					for (var i=0; i<mainFolder.length; i++)
@@ -486,8 +489,6 @@
 					for (var i=0; i<mainFolder.length; i++)
 						if (B!=i && match(mainFolder[i].name, name)>mainFolder[i].name.length)
 							pushCommand('Also good match with: '+suckOutName(mainFolder[i]));
-					arr.unshift(mainFolder[B]);
-					loadSong();
 					return;
 					}
 				if (com.substring(0, 11)=="findInQueue")
@@ -519,6 +520,18 @@
 					loadSong();
 					return;
 					}
+				if (com.substring(0, 4)=="find"){
+					var name=com.substring(5, com.length), A=0, B=0;
+					for (var i=0; i<mainFolder.length; i++)
+						{
+						var L=match(mainFolder[i].name, name);
+						if (L>A)
+							A=L, B=i;
+						}
+					pushCommand('Pushed: '+suckOutName(mainFolder[B])+' to front of the queue.');
+					arr.unshift(mainFolder[B]);
+					return;
+				}
 				if (com.substring(0, 6)=="volume")
 					{
 					var V=com.substring(7, com.length);
