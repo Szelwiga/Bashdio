@@ -1,620 +1,140 @@
-<html>
-	<head>
-		<title> Bashdio </title>
-		<link href="resources/main.css" rel="stylesheet" type="text/css" />
-		<link rel="icon" href="resources/icon.png" type="image/x-icon" />
-		<script src="resources/settings.js"></script>
-	</head>
-	<body onresize="fixCom()">
-		<input type="file" id="loadReq" multiple hidden onchange=loadFolder()>
-		<div id="sidenav">
-			<button id="sidenavBtn" onclick=fonButton()>֍</button>
-			<div id="folderUpload">
-				<input id="folder" type="file" class="custom-file-input" content='⇓' webkitdirectory mozdirectory onchange="loadMainFolder()">
-			</div>
-			<br>
-			<p id="side"></p>
-			<center>
-				<p id="rotator" style="font-size:8pt; position: absolute; bottom: 60px;">
-				</p>
-			</center>
-		</div>
-		<div id="container">
-			<div id="output"></div>
-			<div id="input-line" class="input-line">
-				<div id="prompt" class="prompt-color"></div>&nbsp;
-				<div>
-					<audio id='player'></audio>
-					<center><p id="statusBar"></p></center>
-					<center><div id="canvasPlace"></div></center>
-					<hr>
-					<p id="commandLog" style="margin-block-end: 0.1em;"></p>
-					<div style="display:flex; margin-block-start: 0.1em; margin-block-end: 0.1em;">
-						<p style="color:#e09f14;margin-block-start: 0.1em; margin-block-end: 0.1em;">Bashdio@core:~$&nbsp;</p> <input type="text" id="commandIn" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" autofocus/>
-					</div>
-				</div>
-			</div>
-		</div>
-		<script>
-			/*
-				Some code I used:
-					- https://codepen.io/nfj525/pen/rVBaab
-					- https://github.com/luisbraganca/fake-terminal-website
-					- https://stackoverflow.com/questions/62725857/how-to-get-volume-level-using-javascript
-				TODO:
-					- none ? :)
-			*/
-			var arr=[], mainFolder=[], commandInd=0, nowPlaying="-", rotator="-";
-			var audioContext, analyser, microphone, javascriptNode, can;
-			var visualizerBox=document.getElementById("canvasPlace");
-			var PLAY=document.getElementById("audioPlayerBox");
-			var FILEINP=document.getElementById("loadReq");
-			var OUT=document.getElementById("commandLog");
-			var VIS=document.getElementById("visualizer");
-			var INP=document.getElementById("commandIn");
-			var BAR=document.getElementById("statusBar");
-			var AUDIO=document.getElementById("player");
-			var R=document.getElementById("rotator");
-			var NAV=document.getElementById("side");
-			var percentDivide=100, fonWidth=1000;
-			var F=false, ft=true, DATA=512;
-			var commands=[], cList=[];
-			var MX=true, prefix="";
-			var stopped=true;
+.custom-file-input::-webkit-file-upload-button {
+	visibility: hidden;
+}
+.custom-file-input::before {
+	content: 'Drop folder here.';
+	display: inline-block;
+	background: linear-gradient(top, #f9f9f9, #e3e3e3) !important;
+	padding: 1px 100px 1px 10px;
+	outline: #ffffff;
+	white-space: nowrap;
+	cursor: pointer;
+	font-size: 23pt;
+}
 
+::selection {
+	background: #f7d07e;
+}
+html, body {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+}
+body {
+	font-size: 13pt;
+	font-family: monospace;
+	color: white;
+	background-color: black;
+}
+#container {
+	padding: .1em 1.5em 1em 1em;
+	margin-left: 50px;
+	margin-right: 50px;
+}
+#commandIn {
+	outline: none;
+	background-color: transparent;
+	margin: 0;
+	width: 100%;
+	font: inherit;
+	border: none;
+	color: inherit;
+}
+#output {
+	clear: both;
+	width: 100%;
+}
+#prompt {
+	white-space: nowrap;
+	display: -webkit-box;
+	-webkit-box-pack: center;
+	-webkit-box-orient: vertical;
+	display: -moz-box;
+	-moz-box-pack: center;
+	-moz-box-orient: vertical;
+	display: box;
+	box-pack: center;
+	box-orient: vertical;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	user-select: none;
+}
+.prompt-color {
+	color: #e09f14;
+}
+.input-line {
+	display: -webkit-box;
+	-webkit-box-orient: horizontal;
+	-webkit-box-align: stretch;
+	display: -moz-box;
+	-moz-box-orient: horizontal;
+	-moz-box-align: stretch;
+	display: box;
+	box-orient: horizontal;
+	box-align: stretch;
+	clear: both;
+}
+.input-line > div:nth-child(2) {
+	-webkit-box-flex: 1;
+	-moz-box-flex: 1;
+	box-flex: 1;
+}
 
-			document.getElementById("sidenavBtn").innerHTML=visualizerButton;
-			INP.addEventListener("keydown", f);
-			pushCommand("Welcome to Bashdio!");
-			AUDIO.volume=defaultVolume/100.0;
+/* SIDE NAV */
 
-			setInterval(rotatorUpdate, 1000), rotatorUpdate();
-			setInterval(timeUpdater, 1000), timeUpdater();
-			setInterval(navUpdate, 5000), navUpdate();
+#sidenavBtn {
+	position: absolute !important;
+	padding: 2px !important;
+	top: 0 !important;
+	right: 8px !important;
+	font-size: 40px !important;
+}
+#sidenav {
+	height: 100%;
+	width: 60px;
+	position: fixed;
+	z-index: 9;
+	top: 0;
+	left: 0;
+	background-color: #e09f14;
+	opacity: 0.8;
+	overflow-x: hidden;
+	transition: 0.3s;
+	padding-top: 60px;
+}
+#sidenav button {
+	padding: 8px 8px 8px 32px;
+	cursor: pointer;
+	text-decoration: none;
+	font-size: 15pt;
+	color: white;
+	display: block;
+	transition: 0.3s;
+	background:none !important;
+	border:none;
+}
+#sidenav button:hover {
+	color: #000000;
+}
 
-			function loadMainFolder(){
-				mainFolder=document.getElementById("folder").files;
-				if (mainFolder.length!=0)
-					document.getElementById("folderUpload").innerHTML="", MX=false, prefix=mainFolder[0].webkitRelativePath.substring(0, 1+mainFolder[0].webkitRelativePath.indexOf('/')), pushCommand("Loaded main folder with "+mainFolder.length+" files.");
-			}
-			function renderFrame(){
-				requestAnimationFrame(renderFrame);
-				if (F)
-					{
-					var ctx=can.getContext("2d");
-					var bufferLength=analyser.frequencyBinCount;
-					var dataArray=new Uint8Array(bufferLength);
-					var WIDTH=can.width, HEIGHT=can.height;
-					var barWidth=(WIDTH/bufferLength)*2.5;
-					var barHeight, x=0;
-					analyser.getByteFrequencyData(dataArray);
-					ctx.fillStyle="#000", ctx.fillRect(0, 0, WIDTH, HEIGHT);
-					for (var i=0; i<bufferLength; i++)
-						{
-						barHeight=dataArray[i];
-						if (barHeight==255)
-							barHeight+=Math.floor(Math.random()*10);
-						var r=barHeight+(25*(i/bufferLength));
-						var g=50;
-						var b=50+200*(i/bufferLength);
-						ctx.fillStyle="rgb("+r+","+g+","+b+")";
-						ctx.fillRect(x, HEIGHT-barHeight, barWidth, barHeight);
-						x+=barWidth+1;
-						}
-					}
-			}
-			renderFrame();
-			function rotatorUpdate(){
-				var S="("+rotator+")<br>Bashdio<br>by:<br>Marcel<br>Szelwiga<br>";
-				rotator=next(rotator);
-				R.innerHTML=S;
-			}
-			function next(r){
-				if (r=="-")
-					return "\\";
-				if (r=="\\")
-					return "|";
-				if (r=="|")
-					return "/";
-				if (r=="/")
-				 	return "-";
-			}
-			function clickLoadReq(){
-				document.getElementById("loadReq").click();
-			}
-			function navUpdate(){
-				var S='<center><p style="color:#ffffff;font-size:12pt;"><br>'+new Date().getHours()+':';
-				if (new Date().getMinutes()<10)
-					S+="0"+new Date().getMinutes();
-				else
-					S+=new Date().getMinutes();
-				S+='</p></center>';
-				S+='<center><p style="color:#ffffff;font-size:12pt;">Vol:<br>'+Math.round(AUDIO.volume*100)+'%</p></center>';
-				S+='<center><p style="color:#ffffff;font-size:12pt;">Mute:<br>';
-				if (AUDIO.muted)
-					S+="✔";
-				else
-					S+="✖"
-				S+='</p></center>';
-				S+='<center><p style="color:#ffffff;font-size:12pt;">Play:<br>';
-				if (AUDIO.paused)
-					S+="✖";
-				else
-					S+="✔";
-				S+='</p></center>';
-				NAV.innerHTML=S;
-			}
-			function loadFolder(){
-				var files=FILEINP.files;
-				for (var i=0; i<files.length; i++)
-					arr.push(files[i]);
-				pushCommand('Loaded '+files.length+' clips to the queue.');
-			}
-			function fonButton(){
-				if (!F)
-					canvasPlace.innerHTML='<canvas id="Canwas" height="300" width="'+fonWidth+'"></canvas>', can=document.getElementById("Canwas");
-				else
-					canvasPlace.innerHTML="";
-				if (!ft)
-					F=!F;
-				if (ft)
-					{
-					ft=false;
-					/*navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
-						audioContext=new AudioContext();
-						analyser=audioContext.createAnalyser();
-						microphone=audioContext.createMediaStreamSource(stream);
-						javascriptNode=audioContext.createScriptProcessor(DATA*2, 1, 1);
-						analyser.smoothingTimeConstant=0.8;
-						analyser.fftSize=DATA;
-						microphone.connect(analyser);
-						analyser.connect(javascriptNode);
-						javascriptNode.connect(audioContext.destination);
-						javascriptNode.onaudioprocess=function() {
-						}
-					}).catch(function(err){});*/
-					context=new AudioContext();
-				    src=context.createMediaElementSource(AUDIO);
-				    analyser=context.createAnalyser();
-				    src.connect(analyser);
-				    analyser.connect(context.destination);
-				    analyser.fftSize=DATA;
-					F=!F;
-					}
-			}
-			function timeUpdater(){
-				if (useStopAsPause)
-					{
-					updateStatus(true);
-					if (AUDIO.ended)
-						if (arr.length!=0)
-							loadSong();
-						else
-							nowPlaying="Queue is empty.", updateStatus(false);
-					}
-				else
-					{
-					if (!(AUDIO.ended) && !(stopped)) updateStatus(true);
-					if (AUDIO.ended || stopped)
-						if (arr.length!=0 && !stopped)
-							loadSong();
-						else
-							{
-							nowPlaying="Queue is empty.";
-							updateStatus(false);
-							}
-					}
-			}
-			function updateStatus(showPercent){
-				if (alwaysShowPercent)
-					showPercent=true;
-				var X=AUDIO.currentTime, Y=AUDIO.duration;
-				if (Number.isNaN(Y))
-					Y=1.0;
-				var S="<", percent=(X/Y)*100;
-				for (var i=1; i<=percentDivide/2-2*showPercent; i++)
-					if (i*(100/percentDivide)<=percent)
-						S+='#';
-					else
-						S+='.';
-				if (showPercent) S+="("+Math.floor(percent)+"%)";
-				for (var i=percentDivide/2+1+2*showPercent; i<=percentDivide; i++)
-					if (i*(100/percentDivide)<=percent)
-						S+='#';
-					else
-						S+='.';
-				S+="><br>"+nowPlaying;
-				BAR.innerHTML=S;
-			}
-			function fixCom(){
-				var w=window.outerWidth;
-				var h=window.outerHeight;
-				if (w<1200)
-					percentDivide=50;
-				else
-					percentDivide=100;
-				if (F)
-					{
-					if (w<1200)
-						fonWidth=500;
-					else
-						fonWidth=1000;
-					fonButton(), fonButton();
-					}
-				var offsets=INP.getBoundingClientRect();
-				var top=offsets.top;
-				if (top+200>h)
-					commands.shift(), printCommands(), fixCom();
-			}
-			function printCommands(){
-				var S="";
-				for (var i=0; i<commands.length; i++)
-					{
-					S+=commands[i];
-					if (i!=commands.length-1)
-					S+="<br>";
-					}
-				OUT.innerHTML=S;
-			}
-			function pushCommand(s){
-				commands.push(s);
-				printCommands(), fixCom();
-			}
-			function match(s1, s2){
-				var arr=[];
-				var A='@'+s1.toUpperCase();
-				var B='#'+s2.toUpperCase();
-				var subStrings=[], cur="", t=0;
-				for (var i=1; i<B.length; i++)
-					{
-					if (B.charAt(i)==' ')
-						subStrings.push(cur), cur="";
-					else
-						cur+=B.charAt(i);
-					}
-				subStrings.push(cur);
-				for (var i=0; i<subStrings.length; i++)
-					if (A.indexOf(subStrings[i])!=-1)
-						t++;
-				if (t==subStrings.length)
-					return A.length+B.length;
-				for (var i=0; i<Math.max(s1.length, s2.length)+5; i++)
-					{
-					arr.push([]);
-					for (var j=0; j<Math.max(s1.length, s2.length)+5; j++)
-						arr[i].push(0);
-					}
-				for (var i=1; i<A.length; i++)
-					for (var j=1; j<B.length; j++)
-						if (A.charAt(i)==B.charAt(j))
-							arr[i][j]=arr[i-1][j-1]+1;
-						else
-							arr[i][j]=Math.max(arr[i-1][j], arr[i][j-1]);
+@media screen and (max-height: 450px) {
+	body {
+		font-size: 11pt;
+	}
+	#sidenav {
+		 padding-top: 15px;
+	 }
+	#sidenav a {
+		 font-size: 13px;
+	 }
+}
 
-				return arr[A.length-1][B.length-1];
-			}
-			function suckOutName(s){
-				s=s.name, s=s.substring(0, s.lastIndexOf('.'));
-				if (s.length>fileNameLengthLimit)
-					name=s.substring(0, fileNameLengthLimit)+"...";
-				return s.substring(0, s.length-fileNameCutSuffix);
-			}
-			function loadSong(){
-				if (arr.length==0)
-					{
-					pushCommand('<p style="color:#ff4d4d; display:inline;">Error:</p> Queue is empty!');
-					return;
-					}
-				pushCommand("Now playing: "+suckOutName(arr[0])), nowPlaying=suckOutName(arr[0]), stopped=false;
-				AUDIO.src=URL.createObjectURL(arr[0]), AUDIO.play(), arr.shift();
-				if (arr.length==0)
-					pushCommand('<p style="color:#ff4d4d; display:inline;">Error:</p> Queue is empty!');
-			}
-			function isValid(x){
-				return (x.type.substring(0, 5)=="video");
-			}
-			function doCommand(com){
-				if (com=="help")
-					{
-					pushCommand("Loading songs:");
-					pushCommand("To load main folder press arrow on navigation bar or drop folder on it.")
-					pushCommand("cd: (folder name): go to specified folder.");
-					pushCommand('push (optional argument "all"): clips from current folder will be pushed to the queue, with all arugment every clip from main folder will be loaded.');
-					pushCommand("ls: view folders inside current folder and amount of clips in it.");
-					pushCommand("load: enables to load any clip directly to queue.");
-					pushCommand("find (song name): find by name from main folder and start playing song");
-					pushCommand("Controls:");
-					pushCommand("volume (number): set volume level (from 0 to 100).");
-					pushCommand("clear: clear previous commands.");
-					pushCommand("mute: mute or unmute the audio.");
-					pushCommand("f, ff, fff, ffff: move audio forward for values specified in settings.js.");
-					pushCommand("skip: skip current song and start playing next one.");
-					pushCommand("pause | play: pause/play current song");
-					pushCommand("start: start playing songs.");
-					pushCommand("shuffle: mix up queue, by default clips are sorted by name.");
-					pushCommand("queue: view 5 next songs in queue.");
-					pushCommand("sweep: clears the queue.");
-					return;
-					}
-				if (com.substring(0, 2)=="cd")
-					{
-					if (mainFolder.length==0)
-						{
-						pushCommand("Main folder was not loaded.");
-						return;
-						}
-					var nam=com.substring(3, com.length);
-					if (nam=='..')
-						{
-						if (prefix.indexOf('/')!=prefix.lastIndexOf('/'))
-							prefix=prefix.substring(0, prefix.indexOf('/')+1);
-						return;
-						}
-					var S=prefix+com.substring(3, com.length)+"/", succes=false;
-					for (var i=0; i<mainFolder.length; i++)
-						if (S==mainFolder[i].webkitRelativePath.substring(0, S.length))
-							succes=true;
-					if (succes)
-						prefix=S;
-					else
-						pushCommand("No such directory.");
-					return;
-					}
-				if (com=="sweep")
-					{
-					arr=[];
-					pushCommand("Queue is empty now.");
-					return;
-					}
-				if (com.toUpperCase()=="showhideupload".toUpperCase())
-					{
-					if (MX)
-						document.getElementById("folderUpload").innerHTML="", MX=false;
-					else
-						document.getElementById("folderUpload").innerHTML='<input id="folder" type="file" class="custom-file-input" content="⇓" webkitdirectory mozdirectory onchange="loadMainFolder()">', MX=true;
-					return;
-					}
-				if (com=="load")
-					{
-					FILEINP.click();
-					return;
-					}
-				if (com=="exit")
-					{
-					close();
-					pushCommand("It seems like it's not working.")
-					return;
-					}
-				if (com=="queue")
-					{
-					pushCommand("Queue length: "+arr.length);
-					for (var i=0; i<Math.min(5, arr.length); i++)
-						pushCommand("["+i+"]: "+suckOutName(arr[i]));
-					return;
-					}
-				if (com.substring(0, 4)=="push")
-					{
-					if (mainFolder.length==0)
-						{
-						pushCommand("Main folder was not loaded.");
-						return;
-						}
-					var res=0;
-					if (com.substring(5, com.length)=="all")
-						{
-						for (var i=0; i<mainFolder.length; i++)
-							if (isValid(mainFolder[i]))
-								arr.push(mainFolder[i]), res++;
-						pushCommand('Pushed '+res+' clips to queue from main folder.');
-						return;
-						}
-					for (var i=0; i<mainFolder.length; i++)
-						{
-						if (isValid(mainFolder[i]))
-							{
-							var xx=mainFolder[i].webkitRelativePath;
-							if (prefix==xx.substring(0, prefix.length) && xx.lastIndexOf('/')==prefix.length-1)
-								arr.push(mainFolder[i]), res++;
-							}
-						}
-					pushCommand('Pushed '+res+' clips to queue from: <p style="color:#3399ff; display:inline;">'+prefix+'</p>');
-					return;
-					}
-				if (com=="ls")
-					{
-					if (mainFolder.length==0)
-						{
-						pushCommand("Main folder was not loaded.");
-						return;
-						}
-					var subFolders=[], FIL=0;
-					for (var i=0; i<mainFolder.length; i++)
-						if (mainFolder[i].webkitRelativePath.substring(0, prefix.length)==prefix)
-							{
-							var xx=mainFolder[i].webkitRelativePath, succes=true;
-							xx=xx.substring(prefix.length, xx.length);
-							if (xx.indexOf('/')==-1)
-								{
-								FIL++;
-								continue;
-								}
-							else
-								xx=xx.substring(0, xx.indexOf('/'));
-							xx="["+xx+"]";
-							for (var j=0; j<subFolders.length; j++)
-								if (subFolders[j]==xx)
-									succes=false;
-							if (succes)
-								subFolders.push(xx);
-							}
-					pushCommand("In folder: "+prefix);
-					pushCommand("SubFolders: "+subFolders.toString());
-					pushCommand("Files: "+FIL);
-					return;
-					}
-				if (com.substring(0, 4)=="find")
-					{
-					var name=com.substring(5, com.length), A=0, B=0;
-					for (var i=0; i<mainFolder.length; i++)
-						{
-						var L=match(mainFolder[i].name, name);
-						if (L>A)
-							A=L, B=i;
-						}
-					pushCommand('Best matching with: '+suckOutName(mainFolder[B]));
-					for (var i=0; i<mainFolder.length; i++)
-						if (B!=i && match(mainFolder[i].name, name)>mainFolder[i].name.length)
-							pushCommand('Also good match with: '+suckOutName(mainFolder[i]));
-					arr.unshift(mainFolder[B]);
-					loadSong();
-					return;
-					}
-				if (com.substring(0, 11)=="findInQueue")
-					{
-					var name=com.substring(12, com.length), A=0, B=0;
-					for (var i=0; i<arr.length; i++)
-						{
-						var nam;
-						if (typeof arr[i]=='string')
-							nam=arr[i];
-						else
-							nam=arr[i].name;
-						var L=match(nam, name);
-						if (L>A)
-							A=L, B=i;
-						}
-					pushCommand('Best matching with: '+suckOutName(arr[B]));
-					for (var i=0; i<arr.length; i++)
-						{
-						var nam;
-						if (typeof arr[i]=='string')
-							nam=arr[i];
-						else
-							nam=arr[i].name;
-						if (B!=i && match(nam, name)>nam.length)
-							pushCommand('Also good match with: '+suckOutName(arr[i]));
-						}
-					arr.unshift(arr[B]);
-					loadSong();
-					return;
-					}
-				if (com.substring(0, 6)=="volume")
-					{
-					var V=com.substring(7, com.length);
-					V=Math.min(V, 100), V=Math.max(V, 0), AUDIO.volume=V/100;
-					pushCommand("Volume is set to: "+V+"%"), navUpdate();
-					return;
-					}
-				if (com=="clear")
-					{
-					cList=[], commandInd=0, commands=[];
-					pushCommand("Cleared!");
-					return;
-					}
-				if (com=="mute")
-					{
-					AUDIO.muted=!AUDIO.muted, navUpdate();
-					if (AUDIO.muted)
-						pushCommand("Audio is muted :(");
-					else
-						pushCommand("Audio is unmuted :)");
-					return;
-					}
-				if (com=="f")
-					{
-					pushCommand("Skipped "+skipF+" seconds.");
-					AUDIO.currentTime+=skipF;
-					return;
-					}
-				if (com=="ff")
-					{
-					pushCommand("Skipped "+skipFF+" seconds.");
-					AUDIO.currentTime+=skipFF;
-					return;
-					}
-				if (com=="fff")
-					{
-					pushCommand("Skipped "+skipFFF+" seconds.");
-					AUDIO.currentTime+=skipFFF;
-					return;
-					}
-				if (com=="ffff")
-					{
-					pushCommand("Skipped "+skipFFFF+" seconds.");
-					AUDIO.currentTime+=skipFFFF;
-					return;
-					}
-				if (com=="skip")
-					{
-					loadSong();
-					return;
-					}
-				if (com=="start")
-					{
-					loadSong();
-					return;
-					}
-				if (com=="play")
-					{
-					if (AUDIO.paused)
-						AUDIO.play(), pushCommand("Unpaused audio.");
-					else
-						pushCommand("Audio is already playing!")
-					navUpdate();
-					return;
-					}
-				if (com=="pause" || (com=="stop" && useStopAsPause))
-					{
-					if (AUDIO.paused)
-						pushCommand("Audio is already paused!");
-					else
-						AUDIO.pause(), pushCommand("Paused audio.");
-					navUpdate();
-					return;
-					}
-				if (com=="stop" && !useStopAsPause)
-					{
-					stopped=true, arr=[];
-					if (!(AUDIO.paused)) AUDIO.pause();
-					if (!(Number.isNaN(AUDIO.duration))) AUDIO.currentTime=AUDIO.duration;
-					pushCommand("Stopped audio."), nowPlaying="-", navUpdate();
-					return;
-					}
-				if (com=="shuffle")
-					{
-					for (var i=arr.length-1; i>0; i--)
-						{
-						var j=Math.floor(Math.random()*(i+1));
-						var temp=arr[i];
-						arr[i]=arr[j];
-						arr[j]=temp;
-						}
-					pushCommand("The list was was random shuffled!");
-					return;
-					}
-				pushCommand('<p style="color:#ff4d4d; display:inline;">Error: </p>Command: "'+com+'" not found!');
-			}
-			function f(e){
-				if (e.key=="ArrowUp")
-					{
-					commandInd--, commandInd=Math.max(commandInd, 0);
-					INP.value=cList[commandInd];
-					}
-				if (e.key=="ArrowDown")
-					{
-					commandInd++, commandInd=Math.min(commandInd, cList.length);
-					if (commandInd==cList.length)
-						INP.value="";
-					else
-						INP.value=cList[commandInd];
-					}
-				if (e.key=="Enter")
-					{
-					var s=INP.value;
-					pushCommand('<p style="color:#e09f14; display:inline;">Bashdio@core:~$&nbsp;</p>'+s), INP.value="", doCommand(s), cList.push(s), commandInd=cList.length;
-					}
-			}
-		</script>
-	</body>
+@media screen and (max-width: 900px) {
+	#githubImg img {
+		transform: translateX(900px);
+	}
 
-<html>
+	#container {
+		margin-right: 0;
+	}
+}
