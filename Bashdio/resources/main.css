@@ -1,28 +1,16 @@
 .custom-file-input::-webkit-file-upload-button {
-  visibility: hidden;
+	visibility: hidden;
 }
 .custom-file-input::before {
-  content: '⇓';
-  display: inline-block;
-  background: linear-gradient(top, #f9f9f9, #e3e3e3);
-  border: none;
-  border-radius: 3px;
-  padding: 1px 1px 1px 12px;
-  outline: none;
-  white-space: nowrap;
-  -webkit-user-select: none;
-  cursor: pointer;
-  text-shadow: 1px 1px #fff;
-  font-weight: 700;
-  font-size: 32pt;
+	content: 'Drop folder here.';
+	display: inline-block;
+	background: linear-gradient(top, #f9f9f9, #e3e3e3) !important;
+	padding: 1px 100px 1px 10px;
+	outline: #ffffff;
+	white-space: nowrap;
+	cursor: pointer;
+	font-size: 23pt;
 }
-.custom-file-input:hover::before {
-  border-color: black;
-}
-.custom-file-input:active::before {
-  background: -webkit-linear-gradient(top, #e3e3e3, #f9f9f9);
-}
-
 
 ::selection {
 	background: #f7d07e;
@@ -92,31 +80,18 @@ body {
 	box-flex: 1;
 }
 
-#githubImg img {
-	position: fixed;
-	bottom: 0; right: 0;
-	border: 0;
-}
-
 /* SIDE NAV */
 
 #sidenavBtn {
 	position: absolute !important;
 	padding: 2px !important;
 	top: 0 !important;
-	right: 7px !important;
-	font-size: 35px !important;
-}
-#sidenavInp {
-	position: absolute !important;
-	padding: 2px !important;
-	top: 40!important;
-	right: 7px !important;
-	font-size: 35px !important;
+	right: 8px !important;
+	font-size: 40px !important;
 }
 #sidenav {
 	height: 100%;
-	width: 50px;
+	width: 60px;
 	position: fixed;
 	z-index: 9;
 	top: 0;
@@ -127,20 +102,6 @@ body {
 	transition: 0.3s;
 	padding-top: 60px;
 }
-#sidenav img {
-	display: block;
-	position: absolute;
-	left: 50%;
-	transform: translateX(-50%);
-	bottom: 100px;
-	transition: 0.3s;
-	opacity: 0;
-}
-
-#sidenav img:focus {
-	outline: none;
-}
-
 #sidenav button {
 	padding: 8px 8px 8px 32px;
 	cursor: pointer;
@@ -161,11 +122,11 @@ body {
 		font-size: 11pt;
 	}
 	#sidenav {
-	   padding-top: 15px;
-   }
+		 padding-top: 15px;
+	 }
 	#sidenav a {
-	   font-size: 13px;
-   }
+		 font-size: 13px;
+	 }
 }
 
 @media screen and (max-width: 900px) {
