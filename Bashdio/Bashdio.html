@@ -12,8 +12,7 @@
 			<br>
 			<p id="side"></p>
 			<center>
-				<p id="rotator" style="font-size:8pt; position: absolute; bottom: 60px; right: 8px;">
-				</p>
+				<p id="rotator" style="font-size:8pt; position: absolute; bottom: 60px; right: 8px;"></p>
 			</center>
 		</div>
 		<div id="container">
@@ -44,7 +43,6 @@
 					- https://stackoverflow.com/questions/62725857/how-to-get-volume-level-using-javascript <- in previous version
 				TODO:
 					- windows/google audio navigation
-					- clean up code
 					- none ? :)
 					- ^ not jet :(
 			*/
@@ -62,9 +60,8 @@
 			var NAV=document.getElementById("side");
 			var percentDivide=100, fonWidth=1000;
 			var F=false, ft=true, DATA=512;
+			var prefix="", stopped=true;
 			var commands=[], cList=[];
-			var MX=true, prefix="";
-			var stopped=true;
 
 			addEventListener('dragenter', showLoadFolder, false);
 			addEventListener('dragleave', prepareHidding, false);
@@ -76,6 +73,8 @@
 			setInterval(rotatorUpdate, 1000), rotatorUpdate();
 			setInterval(timeUpdater, 1000), timeUpdater();
 			setInterval(navUpdate, 1000), navUpdate();
+			renderFrame();
+
 			function showLoadFolder(e){
 				document.getElementById("hiddenLine").hidden=false;
 				document.getElementById("folder").hidden=false;
@@ -94,7 +93,7 @@
 			function loadMainFolder(){
 				mainFolder=document.getElementById("folder").files;
 				if (mainFolder.length!=0)
-					hide(), MX=false, prefix=mainFolder[0].webkitRelativePath.substring(0, 1+mainFolder[0].webkitRelativePath.indexOf('/')), pushCommand("Loaded main folder with "+mainFolder.length+" files.");
+					hide(), prefix=mainFolder[0].webkitRelativePath.substring(0, 1+mainFolder[0].webkitRelativePath.indexOf('/')), pushCommand("Loaded main folder with "+mainFolder.length+" files.");
 			}
 			function renderFrame(){
 				requestAnimationFrame(renderFrame);
@@ -122,7 +121,6 @@
 						}
 					}
 			}
-			renderFrame();
 			function rotatorUpdate(){
 				var S="("+rotator+")<br>Bashdio<br>by:<br>Marcel<br>Szelwiga<br>";
 				rotator=next(rotator);
@@ -339,7 +337,7 @@
 					pushCommand("Loading songs:");
 					pushCommand("To load main folder press arrow on navigation bar or drop folder on it.")
 					pushCommand("cd: (folder name): go to specified folder.");
-					pushCommand('push (optional argument "all"): clips from current folder will be pushed to the queue, with all arugment every clip from main folder will be loaded.');
+					pushCommand('push (folder name): clips from specified folder will be pushed to the queue.');
 					pushCommand("ls: view folders inside current folder and amount of clips in it.");
 					pushCommand("load: enables to load any clip directly to queue.");
 					pushCommand("find (song name): find song by name from main folder and push it to the front of queue.");
@@ -386,12 +384,9 @@
 					pushCommand("Queue is empty now.");
 					return;
 					}
-				if (com.toUpperCase()=="showhideupload".toUpperCase())
+				if (com=="uploadMain")
 					{
-					if (MX)
-						document.getElementById("folderUpload").innerHTML="", MX=false;
-					else
-						document.getElementById("folderUpload").innerHTML='<input id="folder" type="file" class="custom-file-input" content="⇓" webkitdirectory mozdirectory onchange="loadMainFolder()">', MX=true;
+					document.getElementById("folder").click();
 					return;
 					}
 				if (com=="load")
@@ -428,7 +423,11 @@
 						{
 						for (var i=0; i<mainFolder.length; i++)
 							if (isValid(mainFolder[i]))
-								arr.push(mainFolder[i]), res++;
+								{
+								var xx=mainFolder[i].webkitRelativePath;
+								if (prefix==xx.substring(0, prefix.length))
+									arr.push(mainFolder[i]), res++;
+								}
 						pushCommand('Pushed '+res+' clips to queue from main folder.');
 						return;
 						}
@@ -528,7 +527,7 @@
 						if (L>A)
 							A=L, B=i;
 						}
-					pushCommand('Pushed: '+suckOutName(mainFolder[B])+' to front of the queue.');
+					pushCommand('Pushed: <p style="color:#3399ff; display:inline;">'+suckOutName(mainFolder[B])+'</p> to front of the queue.');
 					arr.unshift(mainFolder[B]);
 					return;
 				}
