@@ -1,20 +1,23 @@
-cd
-sweep
-showHideUpload
-load
-exit
-queue
-push
-ls
-findInQueue
-find
-volume
-clear
-mute
-f, ff, fff, ffff
-skip
-start
-play
-pause
-stop
-shuffle
+cd "folder name" -> go to specified folder (..) argument also works.
+sweep -> clears the Queue.
+uploadMain -> opens window where main folder can be loaded (with other commands songs from it can be pushed to queue).
+load -> open window where clips can be loaded directly to queue.
+exit -> closes Bashdio tab.
+queue -> shows queue length and next 5 clips.
+push all -> pushes clips to queue from current folder and all subFolders.
+push "folder name" -> pushes clips to queue from specified folder.
+ls -> view content of current folder and it's path.
+list "song name" -> lists all songs which match well with given name.
+find "song name" -> pushes to the front of queue specified clip.
+findInQueue "song name" -> plays song which matches best with given name, which was located in queue.
+volume "0-100 number" -> set volume level.
+clear -> clears console.
+mute -> mute audio.
+f, ff, fff, ffff -> move audio forward with values specified in settings.
+g, gg, ggg, gggg -> move audio backward with values specified in settings.
+skip -> skip current song.
+start -> start playing songs.
+play -> unpause the audio.
+pause -> pause the audio.
+stop -> Clears queue and stops playing audio or pauses it, it depends on settings.
+shuffle -> Random shuffles queue.
