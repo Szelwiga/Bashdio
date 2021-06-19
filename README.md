@@ -1,4 +1,6 @@
 # Bashdio
+It's my first bigger project, which is kind of finished (definitly needs some improvements), fully working.
+
 Audio player on local terminal-styled website.
 
 Some preview screens can be found in preview folder.
