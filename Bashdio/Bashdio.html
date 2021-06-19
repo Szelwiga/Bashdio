@@ -37,6 +37,9 @@
 		</div>
 		<script>
 			/*
+				WARNING: I'm using strange bracket style!
+			*/
+			/*
 				Some code I used:
 					- https://codepen.io/nfj525/pen/rVBaab
 					- https://github.com/luisbraganca/fake-terminal-website
@@ -47,59 +50,59 @@
 					- ^ not jet :(
 			*/
 			var arr=[], mainFolder=[], commandInd=0, nowPlaying="-", rotator="-";
-			var audioContext, analyser, microphone, javascriptNode, can;
-			var visualizerBox=document.getElementById("canvasPlace");
-			var PLAY=document.getElementById("audioPlayerBox");
-			var FILEINP=document.getElementById("loadReq");
-			var OUT=document.getElementById("commandLog");
-			var VIS=document.getElementById("visualizer");
-			var INP=document.getElementById("commandIn");
-			var BAR=document.getElementById("statusBar");
-			var AUDIO=document.getElementById("player");
-			var R=document.getElementById("rotator");
-			var NAV=document.getElementById("side");
-			var percentDivide=100, fonWidth=1000;
-			var F=false, ft=true, DATA=512;
-			var prefix="", stopped=true;
-			var commands=[], cList=[];
+			var audioContext, analyser, microphone, javascriptNode, can;//some audio visualizer variables
+			var visualizerBox=document.getElementById("canvasPlace");//audio visualizer canvas html element
+			var PLAY=document.getElementById("audioPlayerBox");//Someting used in previous versions
+			var FILEINP=document.getElementById("loadReq");//File upload html element
+			var OUT=document.getElementById("commandLog");//div where commands are written
+			var VIS=document.getElementById("visualizer");//someting used in previous versions
+			var INP=document.getElementById("commandIn");//text input for commands
+			var BAR=document.getElementById("statusBar");//the % bar
+			var AUDIO=document.getElementById("player");//html5 audio element
+			var R=document.getElementById("rotator");//Rotator in navbar
+			var NAV=document.getElementById("side");//side navigation
+			var percentDivide=100, fonWidth=1000;//the widht of percent and audio visualizer
+			var F=false, ft=true, DATA=512;//F - show audio visualizer, ft - is audio visualizer launching for first time, DATA - amount of data in audio visualizer
+			var prefix="", stopped=true;//prefix - current folder, stopped - is audio stopped
+			var commands=[], cList=[];//commands - commands on output, cList - previoulsy typed commands
 
-			addEventListener('dragenter', showLoadFolder, false);
-			addEventListener('dragleave', prepareHidding, false);
-			document.getElementById("sidenavBtn").innerHTML=visualizerButton;
-			INP.addEventListener("keydown", f);
+			addEventListener('dragenter', showLoadFolder, false);//for folder uploading event
+			addEventListener('dragleave', prepareHidding, false);//for folder uploading event
+			document.getElementById("sidenavBtn").innerHTML=visualizerButton;//setting audio visualizer button to one from settings
+			INP.addEventListener("keydown", f);//event listener for commands input
 			pushCommand("Welcome to Bashdio!");
-			AUDIO.volume=defaultVolume/100.0;
+			AUDIO.volume=defaultVolume/100.0;//deflaut volume from settings
 
-			setInterval(rotatorUpdate, 1000), rotatorUpdate();
-			setInterval(timeUpdater, 1000), timeUpdater();
-			setInterval(navUpdate, 1000), navUpdate();
-			renderFrame();
+			setInterval(rotatorUpdate, 1000), rotatorUpdate();//rotator updating
+			setInterval(timeUpdater, 1000), timeUpdater();//loading next songs
+			setInterval(navUpdate, 1000), navUpdate();//navigation updating
+			renderFrame()//audio visualizer loop
 
-			function showLoadFolder(e){
+			function showLoadFolder(e){//Shows folder upload on webpage
 				document.getElementById("hiddenLine").hidden=false;
 				document.getElementById("folder").hidden=false;
 				e.stopPropagation();
 	  			e.preventDefault();
 			}
-			function prepareHidding(e){
+			function prepareHidding(e){//delay before hidding folder upload
 				e.stopPropagation();
 				e.preventDefault();
 				setTimeout(hide, 10000);
 			}
-			function hide(){
+			function hide(){//hidding folder upload
 				document.getElementById("hiddenLine").hidden=true;
 				document.getElementById("folder").hidden=true;
 			}
-			function loadMainFolder(){
+			function loadMainFolder(){//Loading main folder
 				mainFolder=document.getElementById("folder").files;
 				if (mainFolder.length!=0)
 					hide(), prefix=mainFolder[0].webkitRelativePath.substring(0, 1+mainFolder[0].webkitRelativePath.indexOf('/')), pushCommand("Loaded main folder with "+mainFolder.length+" files.");
 			}
-			function renderFrame(){
+			function renderFrame(){//audio visualizer loop
 				requestAnimationFrame(renderFrame);
-				if (F)
+				if (F)//shows audio visualizer only if button pressed
 					{
-					var ctx=can.getContext("2d");
+					var ctx=can.getContext("2d");//some audio visualizer stuff
 					var bufferLength=analyser.frequencyBinCount;
 					var dataArray=new Uint8Array(bufferLength);
 					var WIDTH=can.width, HEIGHT=can.height;
@@ -107,7 +110,7 @@
 					var barHeight, x=0;
 					analyser.getByteFrequencyData(dataArray);
 					ctx.fillStyle="#000", ctx.fillRect(0, 0, WIDTH, HEIGHT);
-					for (var i=0; i<bufferLength; i++)
+					for (var i=0; i<bufferLength; i++)//drawing bars
 						{
 						barHeight=dataArray[i];
 						if (barHeight==255)
@@ -121,12 +124,12 @@
 						}
 					}
 			}
-			function rotatorUpdate(){
+			function rotatorUpdate(){//rotator update
 				var S="("+rotator+")<br>Bashdio<br>by:<br>Marcel<br>Szelwiga<br>";
 				rotator=next(rotator);
 				R.innerHTML=S;
 			}
-			function next(r){
+			function next(r){//some rotator stuff
 				if (r=="-")
 					return "\\";
 				if (r=="\\")
@@ -136,16 +139,17 @@
 				if (r=="/")
 				 	return "-";
 			}
-			function clickLoadReq(){
+			function clickLoadReq(){//clicking files upload - when loading clips directly into queue
 				document.getElementById("loadReq").click();
 			}
-			function navUpdate(){
+			function navUpdate(){//updating side navigation bar
 				var S='<center><p style="color:#ffffff;font-size:12pt;"><br>'+new Date().getHours()+':';
-				if (new Date().getMinutes()<10)
+				if (new Date().getMinutes()<10)//printing current time
 					S+="0"+new Date().getMinutes();
 				else
 					S+=new Date().getMinutes();
 				S+='</p></center>';
+				//printing volume, queue length, is audio muted, is audio playing
 				S+='<center><p style="color:#ffffff;font-size:12pt;">Vol:<br>'+Math.round(AUDIO.volume*100)+'%</p></center>';
 				S+='<center><p style="color:#ffffff;font-size:12pt;">Queue:<br>'+arr.length+'</p></center>';
 				S+='<center><p style="color:#ffffff;font-size:12pt;">Mute:<br>';
@@ -162,13 +166,13 @@
 				S+='</p></center>';
 				NAV.innerHTML=S;
 			}
-			function loadFolder(){
+			function loadFolder(){//loading folder directly to queue
 				var files=FILEINP.files;
 				for (var i=0; i<files.length; i++)
 					arr.push(files[i]);
 				pushCommand('Loaded '+files.length+' clips to the queue.');
 			}
-			function fonButton(){
+			function fonButton(){//audio visualizer button
 				if (!F)
 					canvasPlace.innerHTML='<canvas id="Canwas" height="300" width="'+fonWidth+'"></canvas>', can=document.getElementById("Canwas");
 				else
@@ -177,8 +181,9 @@
 					F=!F;
 				if (ft)
 					{
-					ft=false;
-					/*navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+					ft=false;//if audio visualizer was pressed for the first time
+					/*	Some code used in previous version
+						navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
 						audioContext=new AudioContext();
 						analyser=audioContext.createAnalyser();
 						microphone=audioContext.createMediaStreamSource(stream);
@@ -191,16 +196,16 @@
 						javascriptNode.onaudioprocess=function() {
 						}
 					}).catch(function(err){});*/
-					context=new AudioContext();
-				    src=context.createMediaElementSource(AUDIO);
-				    analyser=context.createAnalyser();
-				    src.connect(analyser);
-				    analyser.connect(context.destination);
-				    analyser.fftSize=DATA;
+					context=new AudioContext();//Connection between audio element and audio analyser
+				   	src=context.createMediaElementSource(AUDIO);
+				    	analyser=context.createAnalyser();
+				    	src.connect(analyser);
+				    	analyser.connect(context.destination);
+				    	analyser.fftSize=DATA;
 					F=!F;
 					}
 			}
-			function timeUpdater(){
+			function timeUpdater(){//Loading next song when previous is finished
 				if (useStopAsPause)
 					{
 					updateStatus(true);
@@ -223,7 +228,7 @@
 							}
 					}
 			}
-			function updateStatus(showPercent){
+			function updateStatus(showPercent){//Showing what is current clip name and % status
 				if (alwaysShowPercent)
 					showPercent=true;
 				var X=AUDIO.currentTime, Y=AUDIO.duration;
@@ -244,7 +249,7 @@
 				S+="><br>"+nowPlaying;
 				BAR.innerHTML=S;
 			}
-			function fixCom(){
+			function fixCom(){//reacting to resizing window, small mode
 				var w=window.outerWidth;
 				var h=window.outerHeight;
 				if (w<1200)
@@ -261,10 +266,10 @@
 					}
 				var offsets=INP.getBoundingClientRect();
 				var top=offsets.top;
-				if (top+200>h)
+				if (top+200>h)//clearing commands if to much of them
 					commands.shift(), printCommands(), fixCom();
 			}
-			function printCommands(){
+			function printCommands(){//printing commands
 				var S="";
 				for (var i=0; i<commands.length; i++)
 					{
@@ -274,11 +279,11 @@
 					}
 				OUT.innerHTML=S;
 			}
-			function pushCommand(s){
+			function pushCommand(s){//pushing comands to list, printing them and possibly removing some off them
 				commands.push(s);
 				printCommands(), fixCom();
 			}
-			function match(s1, s2){
+			function match(s1, s2){//returns how similar song names are
 				var arr=[];
 				var A='@'+s1.toUpperCase();
 				var B='#'+s2.toUpperCase();
@@ -295,7 +300,7 @@
 					if (A.indexOf(subStrings[i])!=-1)
 						t++;
 				if (t==subStrings.length)
-					return A.length+B.length;
+					return A.length+B.length;//If one string can be fully found in another returning big value - it means good matching
 				for (var i=0; i<Math.max(s1.length, s2.length)+5; i++)
 					{
 					arr.push([]);
@@ -309,15 +314,15 @@
 						else
 							arr[i][j]=Math.max(arr[i-1][j], arr[i][j-1]);
 
-				return arr[A.length-1][B.length-1];
+				return arr[A.length-1][B.length-1];//otherwise count lsc - it doesnt work good for songs matching
 			}
-			function suckOutName(s){
+			function suckOutName(s){//removing some character suffix from end, and folder path from beggining
 				s=s.name, s=s.substring(0, s.lastIndexOf('.'));
 				if (s.length>fileNameLengthLimit)
 					name=s.substring(0, fileNameLengthLimit)+"...";
 				return s.substring(0, s.length-fileNameCutSuffix);
 			}
-			function loadSong(){
+			function loadSong(){//loading first song from queue to audio element
 				if (arr.length==0)
 					{
 					pushCommand('<p style="color:#ff4d4d; display:inline;">Error:</p> Queue is empty!');
@@ -328,10 +333,10 @@
 				if (arr.length==0)
 					pushCommand('<p style="color:#ff4d4d; display:inline;">Error:</p> Queue is empty!');
 			}
-			function isValid(x){
+			function isValid(x){//chechking if file is playable
 				return (x.type.substring(0, 5)=="video");
 			}
-			function doCommand(com){
+			function doCommand(com){//running typed command
 				if (com=="help")
 					{
 					pushCommand("Loading songs:");
@@ -651,13 +656,13 @@
 					}
 				pushCommand('<p style="color:#ff4d4d; display:inline;">Error: </p>Command: "'+com+'" not found!');
 			}
-			function f(e){
-				if (e.key=="ArrowUp")
+			function f(e){//this function is runned when key is typed to input
+				if (e.key=="ArrowUp")//load previous from CList
 					{
 					commandInd--, commandInd=Math.max(commandInd, 0);
 					INP.value=cList[commandInd];
 					}
-				if (e.key=="ArrowDown")
+				if (e.key=="ArrowDown")//load previous from Clist
 					{
 					commandInd++, commandInd=Math.min(commandInd, cList.length);
 					if (commandInd==cList.length)
@@ -665,7 +670,7 @@
 					else
 						INP.value=cList[commandInd];
 					}
-				if (e.key=="Enter")
+				if (e.key=="Enter")//it's obvious
 					{
 					var s=INP.value;
 					pushCommand('<p style="color:#e09f14; display:inline;">Bashdio@core:~$&nbsp;</p>'+s), INP.value="", doCommand(s), cList.push(s), commandInd=cList.length;
