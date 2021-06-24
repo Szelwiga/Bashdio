@@ -1,14 +1,16 @@
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <html>
 	<head>
 		<title> Bashdio </title>
 		<link href="resources/main.css" rel="stylesheet" type="text/css" />
 		<link rel="icon" href="resources/icon.png" type="image/x-icon" />
 		<script src="resources/settings.js"></script>
+		<script src="resources/cookies.js"></script>
 	</head>
 	<body onresize="fixCom()">
 		<input type="file" id="loadReq" multiple hidden onchange=loadFolder()>
 		<div id="sidenav">
-			<button id="sidenavBtn" onclick=fonButton()>֍</button>
+			<button id="sidenavBtn" onclick=fonButton()>&#1421</button>
 			<br>
 			<p id="side"></p>
 			<center>
@@ -40,16 +42,19 @@
 				WARNING: I'm using strange bracket style!
 			*/
 			/*
+				Facilities based on cookies like favourites, and refill command works currently only for one mainFolder.
 				Some code I used:
 					- https://codepen.io/nfj525/pen/rVBaab
 					- https://github.com/luisbraganca/fake-terminal-website
 					- https://stackoverflow.com/questions/62725857/how-to-get-volume-level-using-javascript <- in previous version
+					- https://www.w3schools.com/js/js_cookies.asp
+					- https://stackoverflow.com/questions/1431094/how-do-i-replace-a-character-at-a-particular-index-in-javascript
 				TODO:
-					- windows/google audio navigation
+					- windows/google audio navigation <- unforcently noone answered on stackoverflow
 					- none ? :)
 					- ^ not jet :(
 			*/
-			var arr=[], mainFolder=[], commandInd=0, nowPlaying="-", rotator="-";
+			var arr=[], mainFolder=[], commandInd=0, nowPlaying="-", rotator="-";//Respectivly, queue, mainFolder array, prvoiously typed commands index, current title, and state of rotator
 			var audioContext, analyser, microphone, javascriptNode, can;//some audio visualizer variables
 			var visualizerBox=document.getElementById("canvasPlace");//audio visualizer canvas html element
 			var PLAY=document.getElementById("audioPlayerBox");//Someting used in previous versions
@@ -61,14 +66,15 @@
 			var AUDIO=document.getElementById("player");//html5 audio element
 			var R=document.getElementById("rotator");//Rotator in navbar
 			var NAV=document.getElementById("side");//side navigation
-			var percentDivide=100, fonWidth=1000;//the widht of percent and audio visualizer
+			var percentDivide=100, fonWidth=1000;//the width of percent and audio visualizer
+			var mainFolderName, favourites;//main folder name, favourites songs
 			var F=false, ft=true, DATA=512;//F - show audio visualizer, ft - is audio visualizer launching for first time, DATA - amount of data in audio visualizer
 			var prefix="", stopped=true;//prefix - current folder, stopped - is audio stopped
 			var commands=[], cList=[];//commands - commands on output, cList - previoulsy typed commands
 
 			addEventListener('dragenter', showLoadFolder, false);//for folder uploading event
 			addEventListener('dragleave', prepareHidding, false);//for folder uploading event
-			document.getElementById("sidenavBtn").innerHTML=visualizerButton;//setting audio visualizer button to one from settings
+			//document.getElementById("sidenavBtn").innerHTML=visualizerButton;//setting audio visualizer button to one from settings, some problems are occuring when button is special character and it is loading from settings
 			INP.addEventListener("keydown", f);//event listener for commands input
 			pushCommand("Welcome to Bashdio!");
 			AUDIO.volume=defaultVolume/100.0;//deflaut volume from settings
@@ -76,13 +82,30 @@
 			setInterval(rotatorUpdate, 1000), rotatorUpdate();//rotator updating
 			setInterval(timeUpdater, 1000), timeUpdater();//loading next songs
 			setInterval(navUpdate, 1000), navUpdate();//navigation updating
-			renderFrame()//audio visualizer loop
 
+			String.prototype.replace=function(index, replacement){//replace index character with replacement fucntion
+				return this.substr(0, index)+replacement+this.substr(index+replacement.length);
+			}
+
+			renderFrame()//audio visualizer loop
+			window.onbeforeunload=function(){//Remembering queue in cookies
+				var S="";
+				for (var i=0; i<mainFolder.length; i++)
+					{
+					var suc='0';
+					for (var j=0; j<arr.length; j++)
+						if (arr[j]==mainFolder[i])
+							suc='1';
+					S+=suc;
+					}
+				if (arr.length!=0)
+					setCookie("queueMask", S, 10);
+			}
 			function showLoadFolder(e){//Shows folder upload on webpage
 				document.getElementById("hiddenLine").hidden=false;
 				document.getElementById("folder").hidden=false;
 				e.stopPropagation();
-	  			e.preventDefault();
+				e.preventDefault();
 			}
 			function prepareHidding(e){//delay before hidding folder upload
 				e.stopPropagation();
@@ -96,7 +119,17 @@
 			function loadMainFolder(){//Loading main folder
 				mainFolder=document.getElementById("folder").files;
 				if (mainFolder.length!=0)
-					hide(), prefix=mainFolder[0].webkitRelativePath.substring(0, 1+mainFolder[0].webkitRelativePath.indexOf('/')), pushCommand("Loaded main folder with "+mainFolder.length+" files.");
+					{
+					hide(), prefix=mainFolder[0].webkitRelativePath.substring(0, 1+mainFolder[0].webkitRelativePath.indexOf('/'));
+					pushCommand("Loaded main folder with "+mainFolder.length+" files.");
+					mainFolderName=prefix, favourites=getCookie(mainFolderName);
+					if (favourites=="")
+						{
+						for (var i=0; i<mainFolder.length; i++)
+							favourites+="0";
+						setCookie(mainFolderName, favourites, 365);
+						}
+					}
 			}
 			function renderFrame(){//audio visualizer loop
 				requestAnimationFrame(renderFrame);
@@ -197,11 +230,11 @@
 						}
 					}).catch(function(err){});*/
 					context=new AudioContext();//Connection between audio element and audio analyser
-				   	src=context.createMediaElementSource(AUDIO);
-				    	analyser=context.createAnalyser();
-				    	src.connect(analyser);
-				    	analyser.connect(context.destination);
-				    	analyser.fftSize=DATA;
+				 	src=context.createMediaElementSource(AUDIO);
+					analyser=context.createAnalyser();
+					src.connect(analyser);
+					analyser.connect(context.destination);
+					analyser.fftSize=DATA;
 					F=!F;
 					}
 			}
@@ -266,7 +299,7 @@
 					}
 				var offsets=INP.getBoundingClientRect();
 				var top=offsets.top;
-				if (top+200>h)//clearing commands if to much of them
+				if (top+200>h && commands.length!=0)//clearing commands if to much of them
 					commands.shift(), printCommands(), fixCom();
 			}
 			function printCommands(){//printing commands
@@ -328,7 +361,7 @@
 					pushCommand('<p style="color:#ff4d4d; display:inline;">Error:</p> Queue is empty!');
 					return;
 					}
-				pushCommand("Now playing: "+suckOutName(arr[0])), nowPlaying=suckOutName(arr[0]), stopped=false;
+				pushCommand('Now playing: <p style="color:#3399ff; display:inline;">'+suckOutName(arr[0])+'</p>'), nowPlaying=suckOutName(arr[0]), stopped=false;
 				AUDIO.src=URL.createObjectURL(arr[0]), AUDIO.play(), arr.shift();
 				if (arr.length==0)
 					pushCommand('<p style="color:#ff4d4d; display:inline;">Error:</p> Queue is empty!');
@@ -357,6 +390,68 @@
 					pushCommand("shuffle: mix up queue, by default clips are sorted by name.");
 					pushCommand("queue: view 5 next songs in queue.");
 					pushCommand("sweep: clears the queue.");
+					return;
+					}
+				if (com=="reFill")
+					{
+					if (mainFolder.length==0)
+						{
+						pushCommand("Main folder was not loaded.");
+						return;
+						}
+					var S=getCookie("queueMask"), cnt=0;
+					for (var i=0; i<mainFolder.length; i++)
+						if (S[i]=='1')
+							arr.push(mainFolder[i]), cnt++;
+					pushCommand('Pushed '+cnt+' clips to queue from lastly closed queue.');
+					return;
+					}
+				if (com.substring(0, 7)=="makeFav")
+					{
+					var name=nowPlaying;
+					if (com.length>=8)
+						name=com.substring(8, com.length);
+					var A=0, B=0;
+					for (var i=0; i<mainFolder.length; i++)
+						{
+						var L=match(mainFolder[i].name, name);
+						if (L>A)
+							A=L, B=i;
+						}
+					favourites=favourites.replace(B, '1'), setCookie(mainFolderName, favourites, 365);
+					pushCommand('Clip: <p style="color:#3399ff; display:inline;">'+suckOutName(mainFolder[B])+'</p> added to favourites.');
+					return;
+					}
+				if (com.substring(0, 6)=="remFav")
+					{
+					var name=nowPlaying;
+					if (com.length>=7)
+						name=com.substring(7, com.length);
+					var A=0, B=0;
+					for (var i=0; i<mainFolder.length; i++)
+						{
+						var L=match(mainFolder[i].name, name);
+						if (L>A)
+							A=L, B=i;
+						}
+					favourites=favourites.replace(B, '0'), setCookie(mainFolderName, favourites, 365);
+					pushCommand('Clip: <p style="color:#3399ff; display:inline;">'+suckOutName(mainFolder[B])+'</p> is no longer in favourites.');
+					return;
+					}
+				if (com=="writeFav")
+					{
+					for (var i=0; i<mainFolder.length; i++)
+						if (favourites[i]=='1')
+							pushCommand('Clip: <p style="color:#3399ff; display:inline;">'+suckOutName(mainFolder[i])+'</p> added to favourites.');
+					return;
+					}
+				if (com=="push Fav")
+					{
+					var res=0;
+					for (var i=0; i<mainFolder.length; i++)
+						if (favourites[i]=='1')
+							arr.push(mainFolder[i]), res++;
+					pushCommand('Pushed '+res+' clips to queue from favourites.');
 					return;
 					}
 				if (com.substring(0, 2)=="cd")
@@ -678,5 +773,4 @@
 			}
 		</script>
 	</body>
-
 <html>
