@@ -26,6 +26,19 @@ body {
 	color: white;
 	background-color: black;
 }
+
+
+#bottomImg canvas.pixelize {
+    width: 128px;
+    height: 128px;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    position: absolute;
+    bottom: 50; right: 50;
+    border: 0;
+}
+
 #container {
 	padding: .1em 1.5em 1em 1em;
 	margin-left: 60px;

@@ -21,11 +21,3 @@ play -> unpause the audio.
 pause -> pause the audio.
 stop -> Clears queue and stops playing audio or pauses it, it depends on settings.
 shuffle -> Random shuffles queue.
-Cookie based functions:
-reFill -> pushes clips from lastly closed queue to queue
-makeFav "songName" -> add specified song to favourites
-makeFav -> add current song to favourites
-remFav "songName" -> removes specified song from favourites
-remFav -> removes current song from favourites
-writeFav -> write favourites list
-push Fav -> pushes clips from favourites to queue

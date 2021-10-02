@@ -7,7 +7,7 @@
 		<script src="resources/settings.js"></script>
 		<script src="resources/cookies.js"></script>
 	</head>
-	<body onresize="fixCom()">
+	<body>
 		<input type="file" id="loadReq" multiple hidden onchange=loadFolder()>
 		<div id="sidenav">
 			<button id="sidenavBtn" onclick=fonButton()>&#1421</button>
@@ -23,7 +23,7 @@
 				<div id="prompt" class="prompt-color"></div>&nbsp;
 				<div>
 					<audio id='player'></audio>
-					<center><p id="statusBar"></p></center>
+					<center><p><div id="statusBar"></div></p></center>
 					<center><div id="canvasPlace"></div></center>
 					<center>
 						<hr id="hiddenLine" hidden>
@@ -37,6 +37,10 @@
 				</div>
 			</div>
 		</div>
+		<a id="bottomImg" target="_blank">
+			<canvas class="pixelize" id="slimy" width="32" height="25" onclick=slimeAgressive()></canvas>
+		</a>
+		</main>
 		<script>
 			/*
 				WARNING: I'm using strange bracket style!
@@ -44,6 +48,7 @@
 			/*
 				Facilities based on cookies like favourites, and refill command works currently only for one mainFolder.
 				Some code I used:
+					- https://developer.mozilla.org/en-US/docs/Games/Techniques/Crisp_pixel_art_look
 					- https://codepen.io/nfj525/pen/rVBaab
 					- https://github.com/luisbraganca/fake-terminal-website
 					- https://stackoverflow.com/questions/62725857/how-to-get-volume-level-using-javascript <- in previous version
@@ -67,28 +72,34 @@
 			var R=document.getElementById("rotator");//Rotator in navbar
 			var NAV=document.getElementById("side");//side navigation
 			var percentDivide=100, fonWidth=1000;//the width of percent and audio visualizer
-			var mainFolderName, favourites;//main folder name, favourites songs
-			var F=false, ft=true, DATA=512;//F - show audio visualizer, ft - is audio visualizer launching for first time, DATA - amount of data in audio visualizer
+			var mainFolderName, favourites=[];//main folder name, favourites songs
+			var F=false, ft=true, DATA=1024;//F - show audio visualizer, ft - is audio visualizer launching for first time, DATA - amount of data in audio visualizer
 			var prefix="", stopped=true;//prefix - current folder, stopped - is audio stopped
 			var commands=[], cList=[];//commands - commands on output, cList - previoulsy typed commands
-
 			addEventListener('dragenter', showLoadFolder, false);//for folder uploading event
 			addEventListener('dragleave', prepareHidding, false);//for folder uploading event
 			//document.getElementById("sidenavBtn").innerHTML=visualizerButton;//setting audio visualizer button to one from settings, some problems are occuring when button is special character and it is loading from settings
 			INP.addEventListener("keydown", f);//event listener for commands input
 			pushCommand("Welcome to Bashdio!");
-			AUDIO.volume=defaultVolume/100.0;//deflaut volume from settings
+
+			//deflaut volume from settings or from cookies
+			if (!isNaN(getCookie("lastVolume")))
+				AUDIO.volume=getCookie("lastVolume");
+			else
+				AUDIO.volume=defaultVolume/100.0;
 
 			setInterval(rotatorUpdate, 1000), rotatorUpdate();//rotator updating
 			setInterval(timeUpdater, 1000), timeUpdater();//loading next songs
 			setInterval(navUpdate, 1000), navUpdate();//navigation updating
+			setInterval(fixCom, 100), fixCom(); //check if sizes are set correctly
 
 			String.prototype.replace=function(index, replacement){//replace index character with replacement fucntion
 				return this.substr(0, index)+replacement+this.substr(index+replacement.length);
 			}
-
 			renderFrame()//audio visualizer loop
-			window.onbeforeunload=function(){//Remembering queue in cookies
+			window.onbeforeunload=function(){//Remembering queue and last volume in cookies
+				setCookie("lastVolume", AUDIO.volume, 10)
+				setCookie(mainFolderName, favourites, 365);
 				var S="";
 				for (var i=0; i<mainFolder.length; i++)
 					{
@@ -123,12 +134,6 @@
 					hide(), prefix=mainFolder[0].webkitRelativePath.substring(0, 1+mainFolder[0].webkitRelativePath.indexOf('/'));
 					pushCommand("Loaded main folder with "+mainFolder.length+" files.");
 					mainFolderName=prefix, favourites=getCookie(mainFolderName);
-					if (favourites=="")
-						{
-						for (var i=0; i<mainFolder.length; i++)
-							favourites+="0";
-						setCookie(mainFolderName, favourites, 365);
-						}
 					}
 			}
 			function renderFrame(){//audio visualizer loop
@@ -139,7 +144,7 @@
 					var bufferLength=analyser.frequencyBinCount;
 					var dataArray=new Uint8Array(bufferLength);
 					var WIDTH=can.width, HEIGHT=can.height;
-					var barWidth=(WIDTH/bufferLength)*2.5;
+					var barWidth=(WIDTH/bufferLength)*3;
 					var barHeight, x=0;
 					analyser.getByteFrequencyData(dataArray);
 					ctx.fillStyle="#000", ctx.fillRect(0, 0, WIDTH, HEIGHT);
@@ -152,7 +157,8 @@
 						var g=50;
 						var b=50+200*(i/bufferLength);
 						ctx.fillStyle="rgb("+r+","+g+","+b+")";
-						ctx.fillRect(x, HEIGHT-barHeight, barWidth, barHeight);
+						if (x+barWidth<WIDTH)
+							ctx.fillRect(x, HEIGHT-barHeight, barWidth, barHeight);
 						x+=barWidth+1;
 						}
 					}
@@ -267,15 +273,15 @@
 				var X=AUDIO.currentTime, Y=AUDIO.duration;
 				if (Number.isNaN(Y))
 					Y=1.0;
-				var S="<", percent=(X/Y)*100;
+				var S="<", percent=(X/1.0/Y)*100.0;
 				for (var i=1; i<=percentDivide/2-2*showPercent; i++)
-					if (i*(100/percentDivide)<=percent)
+					if (i*(100.0/percentDivide)<=percent)
 						S+='#';
 					else
 						S+='.';
 				if (showPercent) S+="("+Math.floor(percent)+"%)";
 				for (var i=percentDivide/2+1+2*showPercent; i<=percentDivide; i++)
-					if (i*(100/percentDivide)<=percent)
+					if (i*(100.0/percentDivide)<=percent)
 						S+='#';
 					else
 						S+='.';
@@ -285,16 +291,15 @@
 			function fixCom(){//reacting to resizing window, small mode
 				var w=window.outerWidth;
 				var h=window.outerHeight;
-				if (w<1200)
-					percentDivide=50;
-				else
-					percentDivide=100;
+				if (w<100 || h<100) return;
+				percentDivide=Math.max((w-200)/11, 10);
 				if (F)
 					{
-					if (w<1200)
-						fonWidth=500;
-					else
-						fonWidth=1000;
+					fonWidth=document.getElementById("statusBar").offsetWidth-200;
+					DATA=1;
+					while (DATA*2<fonWidth)
+						DATA*=2;
+					analyser.fftSize=DATA;
 					fonButton(), fonButton();
 					}
 				var offsets=INP.getBoundingClientRect();
@@ -361,13 +366,28 @@
 					pushCommand('<p style="color:#ff4d4d; display:inline;">Error:</p> Queue is empty!');
 					return;
 					}
-				pushCommand('Now playing: <p style="color:#3399ff; display:inline;">'+suckOutName(arr[0])+'</p>'), nowPlaying=suckOutName(arr[0]), stopped=false;
-				AUDIO.src=URL.createObjectURL(arr[0]), AUDIO.play(), arr.shift();
+				pushCommand('Now playing: <p style="display:inline;">'+suckOutName(arr[0])+'</p>'), nowPlaying=suckOutName(arr[0]), stopped=false;
+				AUDIO.src=URL.createObjectURL(arr[0]), AUDIO.play(), arr.shift(), touchSlime();
 				if (arr.length==0)
 					pushCommand('<p style="color:#ff4d4d; display:inline;">Error:</p> Queue is empty!');
 			}
 			function isValid(x){//chechking if file is playable
 				return (x.type.substring(0, 5)=="video");
+			}
+			function bestMachings(name){
+				var ret=[];
+				var A=0, B=0;
+				for (var i=0; i<mainFolder.length; i++)
+					{
+					var L=match(mainFolder[i].name, name);
+					if (L>A)
+						A=L, B=i;
+					}
+				ret.push(suckOutName(mainFolder[B]));
+				for (var i=0; i<mainFolder.length; i++)
+					if (B!=i && match(mainFolder[i].name, name)>mainFolder[i].name.length)
+						ret.push(suckOutName(mainFolder[i]));
+				return ret;
 			}
 			function doCommand(com){//running typed command
 				if (com=="help")
@@ -408,49 +428,74 @@
 					}
 				if (com.substring(0, 7)=="makeFav")
 					{
+					if (mainFolder.length==0)
+						{
+						pushCommand("Main folder was not loaded.");
+						return;
+						}
 					var name=nowPlaying;
 					if (com.length>=8)
 						name=com.substring(8, com.length);
-					var A=0, B=0;
-					for (var i=0; i<mainFolder.length; i++)
-						{
-						var L=match(mainFolder[i].name, name);
-						if (L>A)
-							A=L, B=i;
-						}
-					favourites=favourites.replace(B, '1'), setCookie(mainFolderName, favourites, 365);
-					pushCommand('Clip: <p style="color:#3399ff; display:inline;">'+suckOutName(mainFolder[B])+'</p> added to favourites.');
+					var matchings=bestMachings(name);
+					var arrayWithNames=favourites.split('}');
+					for (var i=0; i<arrayWithNames.length; i++)
+						if (arrayWithNames[i]==matchings[0])
+							{
+							pushCommand("This clip already is in favourites.");
+							return;
+							}
+					favourites+=matchings[0]+"}", setCookie(mainFolderName, favourites, 365);
+					pushCommand('Clip: <p style="color:#3399ff; display:inline;">'+matchings[0]+'</p> added to favourites.');
 					return;
 					}
 				if (com.substring(0, 6)=="remFav")
 					{
 					var name=nowPlaying;
+					if (mainFolder.length==0)
+						{
+						pushCommand("Main folder was not loaded.");
+						return;
+						}
+					var name=nowPlaying;
 					if (com.length>=7)
 						name=com.substring(7, com.length);
-					var A=0, B=0;
-					for (var i=0; i<mainFolder.length; i++)
-						{
-						var L=match(mainFolder[i].name, name);
-						if (L>A)
-							A=L, B=i;
-						}
-					favourites=favourites.replace(B, '0'), setCookie(mainFolderName, favourites, 365);
-					pushCommand('Clip: <p style="color:#3399ff; display:inline;">'+suckOutName(mainFolder[B])+'</p> is no longer in favourites.');
+					var matchings=bestMachings(name);
+					var arrayWithNames=favourites.split('}');
+					for (var i=0; i<arrayWithNames.length; i++)
+						if (arrayWithNames[i]==matchings[0])
+							{
+							favourites="";
+							for (var j=0; j<arrayWithNames.length-1; j++)
+								if (i!=j)
+									favourites+=arrayWithNames[j]+"}";
+							pushCommand('Clip: <p style="color:#3399ff; display:inline;">'+matchings[0]+'</p> is no longer in favourites.');
+							return;
+							}
+					pushCommand('This clip was not in favourites.');
 					return;
 					}
 				if (com=="writeFav")
 					{
-					for (var i=0; i<mainFolder.length; i++)
-						if (favourites[i]=='1')
-							pushCommand('Clip: <p style="color:#3399ff; display:inline;">'+suckOutName(mainFolder[i])+'</p> added to favourites.');
+					if (mainFolder.length==0)
+						{
+						pushCommand("Main folder was not loaded.");
+						return;
+						}
+					var arrayWithNames=favourites.split('}');
+					for (var i=0; i<arrayWithNames.length-1; i++)
+						pushCommand('Clip: <p style="color:#3399ff; display:inline;">'+arrayWithNames[i]+'</p> is in favourites.');
 					return;
 					}
 				if (com=="push Fav")
 					{
-					var res=0;
-					for (var i=0; i<mainFolder.length; i++)
-						if (favourites[i]=='1')
-							arr.push(mainFolder[i]), res++;
+					var res=0, arrayWithNames=favourites.split('}');
+					for (var j=0; j<arrayWithNames.length-1; j++)
+						for (var i=0; i<mainFolder.length; i++)
+							if (arrayWithNames[j]==suckOutName(mainFolder[i]))
+								{
+								arr.push(mainFolder[i]), res++;
+								break;
+								}
 					pushCommand('Pushed '+res+' clips to queue from favourites.');
 					return;
 					}
@@ -588,6 +633,25 @@
 					for (var i=0; i<mainFolder.length; i++)
 						if (B!=i && match(mainFolder[i].name, name)>mainFolder[i].name.length)
 							pushCommand('Also good match with: '+suckOutName(mainFolder[i]));
+					return;
+					}
+				if (com.substring(0, 9)=="findList ")
+					{
+					var name=com.substring(9, com.length), A=0, B=0;
+					for (var i=0; i<mainFolder.length; i++)
+						{
+						var L=match(mainFolder[i].name, name);
+						if (L>A)
+							A=L, B=i;
+						}
+					pushCommand('Pushed: <p style="color:#3399ff; display:inline;">'+suckOutName(mainFolder[B])+'</p> to front of the queue.');
+					arr.unshift(mainFolder[B]);
+					for (var i=0; i<mainFolder.length; i++)
+						if (B!=i && match(mainFolder[i].name, name)>mainFolder[i].name.length)
+							{
+							pushCommand('Pushed: <p style="color:#3399ff; display:inline;">'+suckOutName(mainFolder[i])+'</p> to front of the queue.');
+							arr.unshift(mainFolder[i]);
+							}
 					return;
 					}
 				if (com.substring(0, 11)=="findInQueue")
@@ -767,10 +831,12 @@
 					}
 				if (e.key=="Enter")//it's obvious
 					{
+					kickSlime();
 					var s=INP.value;
 					pushCommand('<p style="color:#e09f14; display:inline;">Bashdio@core:~$&nbsp;</p>'+s), INP.value="", doCommand(s), cList.push(s), commandInd=cList.length;
 					}
 			}
 		</script>
+		<script src="resources/slimeAnimation.js"></script>
 	</body>
 <html>
