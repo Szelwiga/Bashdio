@@ -1,16 +1,22 @@
-# Bashdio
-It's my first bigger project, which is kind of finished (definitly needs some improvements), fully working.
+### Bashdio
+Terminal styled audio player on static website.
 
-Audio player on local terminal-styled website.
+#### How to run?
+* Just visit: `https://szelwiga.github.io/Bashdio`
+* Or download repo and run it as local version.
 
-Some preview screens can be found in preview folder.
+#### How it's working?
+Drag and drop directory with music clips in format that html `audio` element accepts - `.m4a`, `.mp3`, `.mp4`, `.wav`, `.webm` are fine. The files are not going to be uploaded anywhere, after such drag and drop they will be just visible to website. Using commands decide which clips to play.
 
-Help command might be usefull.
+#### How to use?
+After drag and drom, some basic commands might be usefull:
+* To load music clips to queue type `push <dirname>`, where the dirname is path in uploaded directory this command will load to queue `/dirname/*`.
+* To start playing audio type `start`.
+* Use `volume xx` to set volume.
+* Use `play`/`pause` to pause and play audio.
 
-Full commands list may be found in command Documentation folder.
+#### Cookies
+This website uses cookies to save volume, songs marked favourite, and current queue.
 
-To start playing audio the fastest way to do it is:
-
-Type "load" <- file load window will be opened then and select as many songs as u want.
-
-Then just type "start".
+#### Note
+I wrote the code without knowledge of how parser works. Now i have this knowledge and this code would look totally different.
