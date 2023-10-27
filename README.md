@@ -18,5 +18,8 @@ After drag and drom, some basic commands might be usefull:
 #### Cookies
 This website uses cookies to save volume, songs marked favourite, and current queue.
 
+#### Commands list:
+> TODO
+
 #### Note
 I wrote the code without knowledge of how parser works. Now i have this knowledge and this code would look totally different.
