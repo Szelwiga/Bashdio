@@ -32,7 +32,7 @@
 					<hr>
 					<p id="commandLog" style="margin-block-end: 0.1em;"></p>
 					<div style="display:flex; margin-block-start: 0.1em; margin-block-end: 0.1em;">
-						<p style="color:#e09f14;margin-block-start: 0.1em; margin-block-end: 0.1em;">Bashdio@core:~$&nbsp;</p> <input type="text" id="commandIn" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" autofocus/>
+						<p style="color:#e2b714;margin-block-start: 0.1em; margin-block-end: 0.1em;">Bashdio@core:~$&nbsp;</p> <input type="text" id="commandIn" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" autofocus/>
 					</div>
 				</div>
 			</div>
@@ -55,7 +55,7 @@
 					- https://www.w3schools.com/js/js_cookies.asp
 					- https://stackoverflow.com/questions/1431094/how-do-i-replace-a-character-at-a-particular-index-in-javascript
 				TODO:
-					- windows/google audio navigation <- unforcently noone answered on stackoverflow
+					- windows/google audio navigation
 					- none ? :)
 					- ^ not jet :(
 			*/
@@ -78,6 +78,7 @@
 			var commands=[], cList=[];//commands - commands on output, cList - previoulsy typed commands
 			addEventListener('dragenter', showLoadFolder, false);//for folder uploading event
 			addEventListener('dragleave', prepareHidding, false);//for folder uploading event
+			var shouldBreak = false;
 			//document.getElementById("sidenavBtn").innerHTML=visualizerButton;//setting audio visualizer button to one from settings, some problems are occuring when button is special character and it is loading from settings
 			INP.addEventListener("keydown", f);//event listener for commands input
 			pushCommand("Welcome to Bashdio!");
@@ -147,7 +148,7 @@
 					var barWidth=(WIDTH/bufferLength)*3;
 					var barHeight, x=0;
 					analyser.getByteFrequencyData(dataArray);
-					ctx.fillStyle="#000", ctx.fillRect(0, 0, WIDTH, HEIGHT);
+					ctx.fillStyle="#2c2e31", ctx.fillRect(0, 0, WIDTH, HEIGHT);
 					for (var i=0; i<bufferLength; i++)//drawing bars
 						{
 						barHeight=dataArray[i];
@@ -249,10 +250,20 @@
 					{
 					updateStatus(true);
 					if (AUDIO.ended)
+						{
+						if (shouldBreak)
+							{
+							shouldBreak = false;
+							AUDIO.currentTime -= 1;
+							AUDIO.pause();
+							pushCommand("Break happend.");
+							return;
+							}
 						if (arr.length!=0)
 							loadSong();
 						else
 							nowPlaying="Queue is empty.", updateStatus(false);
+						}
 					}
 				else
 					{
@@ -497,6 +508,11 @@
 								break;
 								}
 					pushCommand('Pushed '+res+' clips to queue from favourites.');
+					return;
+					}
+				if (com=="break")
+					{
+					shouldBreak = ! shouldBreak;
 					return;
 					}
 				if (com.substring(0, 2)=="cd")
@@ -833,7 +849,7 @@
 					{
 					kickSlime();
 					var s=INP.value;
-					pushCommand('<p style="color:#e09f14; display:inline;">Bashdio@core:~$&nbsp;</p>'+s), INP.value="", doCommand(s), cList.push(s), commandInd=cList.length;
+					pushCommand('<p style="color:#e2b714; display:inline;">Bashdio@core:~$&nbsp;</p>'+s), INP.value="", doCommand(s), cList.push(s), commandInd=cList.length;
 					}
 			}
 		</script>

@@ -4,7 +4,7 @@ function sleep(ms) {
 var ctx=document.getElementById('slimy').getContext('2d');
 var image=new Image();
 image.onload=function(){
-	ctx.fillStyle="#000", ctx.fillRect(0, 0, 500, 500);
+	ctx.fillStyle="#2c2e31", ctx.fillRect(0, 0, 500, 500);
     ctx.drawImage(image, 0, 0);
 }
 summon();
