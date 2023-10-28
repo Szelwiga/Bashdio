@@ -47,4 +47,4 @@ This website uses cookies to save volume, songs marked as favourite, and current
 * `break` - pauses after clip finishes.
 
 #### Note
-I wrote the code without knowledge of how parser works. Now i have this knowledge and this code would look totally different.
+I wrote the code without knowledge of how parsers work. Now i have this knowledge and this code would look totally different.
