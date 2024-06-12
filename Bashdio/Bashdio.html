@@ -383,7 +383,7 @@
 					pushCommand('<p style="color:#ff4d4d; display:inline;">Error:</p> Queue is empty!');
 			}
 			function isValid(x){//chechking if file is playable
-				return (x.type.substring(0, 5)=="video");
+				return (x.type.substring(0, 5)=="video") || (x.type.substring(0, 5)=="audio");
 			}
 			function bestMachings(name){
 				var ret=[];
